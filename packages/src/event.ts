@@ -18,8 +18,14 @@ type OpenOverlayOptions = {
   overlayId?: string;
 };
 
+type OpenAsyncOverlayOptions<T> = OpenOverlayOptions & {
+  defaultValue: T;
+};
+
 export function createOverlay(overlayId: string) {
-  const [useOverlayEvent, createEvent] = createUseExternalEvents<OverlayEvent>(`${overlayId}/overlay-kit`);
+  const [useOverlayEvent, createEvent, subscribeEvent] = createUseExternalEvents<OverlayEvent>(
+    `${overlayId}/overlay-kit`
+  );
 
   const open = (controller: OverlayControllerComponent, options?: OpenOverlayOptions) => {
     const overlayId = options?.overlayId ?? randomId();
@@ -30,33 +36,97 @@ export function createOverlay(overlayId: string) {
     return overlayId;
   };
 
-  const openAsync = async <T>(controller: OverlayAsyncControllerComponent<T>, options?: OpenOverlayOptions) => {
+  function openAsync<T>(
+    controller: OverlayAsyncControllerComponent<T>,
+    options: OpenAsyncOverlayOptions<T>
+  ): Promise<T>;
+  function openAsync<T>(controller: OverlayAsyncControllerComponent<T>, options?: OpenOverlayOptions): Promise<T>;
+  function openAsync<T>(
+    controller: OverlayAsyncControllerComponent<T>,
+    options?: OpenOverlayOptions | OpenAsyncOverlayOptions<T>
+  ): Promise<T> {
     return new Promise<T>((_resolve, _reject) => {
-      open((overlayProps, ...deprecatedLegacyContext) => {
-        /**
-         * @description close the overlay with resolve
-         */
-        const close = (param: T) => {
-          _resolve(param);
-          overlayProps.close();
-        };
+      let resolved = false;
+      const hasDefaultValue = options != null && 'defaultValue' in options;
 
-        /**
-         * @description close the overlay with reject
-         */
-        const reject = (reason?: unknown) => {
-          _reject(reason);
-          overlayProps.close();
-        };
+      const cleanup = () => {
+        unsubscribeClose();
+        unsubscribeCloseAll();
+        unsubscribeUnmount();
+        unsubscribeUnmountAll();
+      };
 
-        /**
-         * @description Passing overridden methods
-         */
-        const props: OverlayAsyncControllerProps<T> = { ...overlayProps, close, reject };
-        return controller(props, ...deprecatedLegacyContext);
-      }, options);
+      const resolve = (value: T) => {
+        if (resolved) {
+          return;
+        }
+        resolved = true;
+        cleanup();
+        _resolve(value);
+      };
+
+      const reject = (reason?: unknown) => {
+        if (resolved) {
+          return;
+        }
+        resolved = true;
+        cleanup();
+        _reject(reason);
+      };
+
+      const currentOverlayId = options?.overlayId ?? randomId();
+      const defaultValue = hasDefaultValue ? (options as OpenAsyncOverlayOptions<T>).defaultValue : undefined;
+
+      const noop = () => {};
+      const unsubscribeClose = hasDefaultValue
+        ? subscribeEvent('close', (closedOverlayId: string) => {
+            if (closedOverlayId === currentOverlayId) {
+              resolve(defaultValue as T);
+            }
+          })
+        : noop;
+
+      const unsubscribeCloseAll = hasDefaultValue
+        ? subscribeEvent('closeAll', () => {
+            resolve(defaultValue as T);
+          })
+        : noop;
+
+      const unsubscribeUnmount = hasDefaultValue
+        ? subscribeEvent('unmount', (unmountedOverlayId: string) => {
+            if (unmountedOverlayId === currentOverlayId) {
+              resolve(defaultValue as T);
+            }
+          })
+        : noop;
+
+      const unsubscribeUnmountAll = hasDefaultValue
+        ? subscribeEvent('unmountAll', () => {
+            resolve(defaultValue as T);
+          })
+        : noop;
+
+      open(
+        (overlayProps, ...deprecatedLegacyContext) => {
+          const close = (param: T) => {
+            resolve(param);
+            overlayProps.close();
+          };
+
+          const props: OverlayAsyncControllerProps<T> = {
+            ...overlayProps,
+            close,
+            reject: (reason?: unknown) => {
+              reject(reason);
+              overlayProps.close();
+            },
+          };
+          return controller(props, ...deprecatedLegacyContext);
+        },
+        { overlayId: currentOverlayId }
+      );
     });
-  };
+  }
 
   const close = createEvent('close');
   const unmount = createEvent('unmount');
