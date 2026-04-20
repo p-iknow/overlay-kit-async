@@ -201,7 +201,7 @@ describe('overlay object', () => {
                 ({ isOpen, reject }) =>
                   isOpen && <button onClick={() => reject('rejected')}>{overlayDialogContent}</button>
               );
-            } catch (error) {
+            } catch {
               //
             }
           }}

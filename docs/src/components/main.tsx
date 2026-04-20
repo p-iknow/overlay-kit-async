@@ -475,7 +475,9 @@ const StarCanvasFar = () => {
         }
       });
     });
-    parentElement && observer.observe(parentElement);
+    if (parentElement) {
+      observer.observe(parentElement);
+    }
 
     return () => {
       cancelAnimationFrame(resizeAnimationFrameIdRef.current);
@@ -602,7 +604,9 @@ const StarCanvasClose = () => {
         }
       });
     });
-    parentElement && observer.observe(parentElement);
+    if (parentElement) {
+      observer.observe(parentElement);
+    }
 
     return () => {
       cancelAnimationFrame(resizeAnimationFrameIdRef.current);

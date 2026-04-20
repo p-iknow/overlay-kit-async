@@ -57,7 +57,7 @@ export const determineCurrentOverlayId = (
   const targetIndexInOpenedList = openedOverlayOrderList.findIndex((item) => item === targetOverlayId);
 
   return targetIndexInOpenedList === openedOverlayOrderList.length - 1
-    ? openedOverlayOrderList[targetIndexInOpenedList - 1] ?? null
+    ? (openedOverlayOrderList[targetIndexInOpenedList - 1] ?? null)
     : openedOverlayOrderList[openedOverlayOrderList.length - 1];
 };
 
