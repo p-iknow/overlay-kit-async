@@ -1,22 +1,22 @@
 {
-  "name": "overlay-kit",
-  "version": "1.8.6",
+  "name": "overlay-kit-async",
+  "version": "1.0.0",
   "description": "Next-generation tools for managing overlays",
   "keywords": [
     "overlay",
     "react"
   ],
-  "homepage": "https://overlay-kit.slash.page",
-  "bugs": "https://github.com/toss/overlay-kit/issues",
+  "homepage": "https://github.com/p-iknow/overlay-kit-async",
+  "bugs": "https://github.com/p-iknow/overlay-kit-async/issues",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/toss/overlay-kit.git",
+    "url": "git+https://github.com/p-iknow/overlay-kit-async.git",
     "directory": "packages"
   },
   "license": "MIT",
   "author": {
-    "name": "Yongbeen Im",
-    "email": "been.im@toss.im"
+    "name": "이영창(piknow)",
+    "email": "p.iknow.dev@gmail.com"
   },
   "sideEffects": false,
   "type": "module",
