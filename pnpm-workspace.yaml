@@ -1,0 +1,15 @@
+packages:
+  - 'packages'
+  - 'docs'
+  - 'docs-old'
+  - 'examples/**'
+
+catalog:
+  '@testing-library/jest-dom': ^6.9.1
+  '@vitejs/plugin-react': ^5.1.3
+  '@vitest/browser-playwright': ^4.0.18
+  playwright: ^1.52.0
+  typescript: ^5.9.3
+  vite: ^7.3.1
+  vitest: ^4.0.18
+  vitest-browser-react: ^0.1.0
