@@ -1,0 +1,40 @@
+name: Changeset Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  changeset-check:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for changeset
+        run: |
+          CHANGED=$(git diff --name-only origin/main...HEAD)
+
+          # packages/ 디렉토리에 변경이 있는지 확인
+          PKG_CHANGED=$(echo "$CHANGED" | grep -c '^packages/src/' || true)
+
+          if [ "$PKG_CHANGED" -gt 0 ]; then
+            # 라이브러리 소스 변경이 있으면 changeset 필수
+            CHANGESET_FILES=$(echo "$CHANGED" | grep -c '^\.changeset/.*\.md$' || true)
+
+            if [ "$CHANGESET_FILES" -eq 0 ]; then
+              echo "::error::이 PR은 packages/src/ 변경을 포함하고 있지만 changeset이 없습니다."
+              echo ""
+              echo "changeset을 추가하려면:"
+              echo "  pnpm changeset"
+              echo ""
+              echo "라이브러리 소스 변경이 아닌 경우 이 체크를 무시해도 됩니다."
+              exit 1
+            else
+              echo "✅ changeset이 포함되어 있습니다."
+            fi
+          else
+            echo "⏭️ packages/src/ 변경이 없으므로 changeset이 필요하지 않습니다."
+          fi

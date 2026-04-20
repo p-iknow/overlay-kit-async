@@ -1,10 +1,5 @@
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
-!.yarn/versions
-
 node_modules
 .DS_Store
+
+# OMC local state
+.omc/
