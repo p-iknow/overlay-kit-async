@@ -1,5 +1,6 @@
 node_modules
 .DS_Store
 
-# OMC local state
+# Local AI tooling state (OMC / Claude Code)
 .omc/
+.claude/
