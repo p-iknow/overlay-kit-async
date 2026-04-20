@@ -40,12 +40,15 @@ export function createOverlay(overlayId: string) {
     controller: OverlayAsyncControllerComponent<T>,
     options: OpenAsyncOverlayOptions<T>
   ): Promise<T>;
-  function openAsync<T>(controller: OverlayAsyncControllerComponent<T>, options?: OpenOverlayOptions): Promise<T>;
+  function openAsync<T>(
+    controller: OverlayAsyncControllerComponent<T>,
+    options?: OpenOverlayOptions
+  ): Promise<T | undefined>;
   function openAsync<T>(
     controller: OverlayAsyncControllerComponent<T>,
     options?: OpenOverlayOptions | OpenAsyncOverlayOptions<T>
-  ): Promise<T> {
-    return new Promise<T>((_resolve, _reject) => {
+  ): Promise<T | undefined> {
+    return new Promise<T | undefined>((_resolve, _reject) => {
       let resolved = false;
       const hasDefaultValue = options != null && 'defaultValue' in options;
 
@@ -56,7 +59,7 @@ export function createOverlay(overlayId: string) {
         unsubscribeUnmountAll();
       };
 
-      const resolve = (value: T) => {
+      const resolve = (value: T | undefined) => {
         if (resolved) {
           return;
         }
@@ -77,34 +80,25 @@ export function createOverlay(overlayId: string) {
       const currentOverlayId = options?.overlayId ?? randomId();
       const defaultValue = hasDefaultValue ? (options as OpenAsyncOverlayOptions<T>).defaultValue : undefined;
 
-      const noop = () => {};
-      const unsubscribeClose = hasDefaultValue
-        ? subscribeEvent('close', (closedOverlayId: string) => {
-            if (closedOverlayId === currentOverlayId) {
-              resolve(defaultValue as T);
-            }
-          })
-        : noop;
+      const unsubscribeClose = subscribeEvent('close', (closedOverlayId: string) => {
+        if (closedOverlayId === currentOverlayId) {
+          resolve(defaultValue);
+        }
+      });
 
-      const unsubscribeCloseAll = hasDefaultValue
-        ? subscribeEvent('closeAll', () => {
-            resolve(defaultValue as T);
-          })
-        : noop;
+      const unsubscribeCloseAll = subscribeEvent('closeAll', () => {
+        resolve(defaultValue);
+      });
 
-      const unsubscribeUnmount = hasDefaultValue
-        ? subscribeEvent('unmount', (unmountedOverlayId: string) => {
-            if (unmountedOverlayId === currentOverlayId) {
-              resolve(defaultValue as T);
-            }
-          })
-        : noop;
+      const unsubscribeUnmount = subscribeEvent('unmount', (unmountedOverlayId: string) => {
+        if (unmountedOverlayId === currentOverlayId) {
+          resolve(defaultValue);
+        }
+      });
 
-      const unsubscribeUnmountAll = hasDefaultValue
-        ? subscribeEvent('unmountAll', () => {
-            resolve(defaultValue as T);
-          })
-        : noop;
+      const unsubscribeUnmountAll = subscribeEvent('unmountAll', () => {
+        resolve(defaultValue);
+      });
 
       open(
         (overlayProps, ...deprecatedLegacyContext) => {

@@ -766,7 +766,7 @@ describe('overlay object', () => {
       });
     });
 
-    it('stays pending without defaultValue when closed externally (backward compatible)', async () => {
+    it('resolves with undefined without defaultValue when closed externally via overlay.close()', async () => {
       // given: an openAsync overlay without defaultValue
       const overlayTriggerContent = 'openasync-no-default-trigger';
       const testOverlayId = 'test-no-default-overlay';
@@ -800,9 +800,126 @@ describe('overlay object', () => {
         overlay.close(testOverlayId);
       });
 
-      // then: promise stays pending (mockFn never called)
-      await new Promise((r) => setTimeout(r, 100));
-      expect(mockFn).not.toHaveBeenCalled();
+      // then: promise resolves with undefined (no longer pending)
+      await waitFor(() => {
+        expect(mockFn).toHaveBeenCalledWith(undefined);
+      });
+    });
+
+    it('resolves with undefined without defaultValue when closed via overlay.closeAll()', async () => {
+      // given: an openAsync overlay without defaultValue
+      const overlayTriggerContent = 'openasync-no-default-closeall-trigger';
+      const mockFn = vi.fn();
+
+      function Component() {
+        return (
+          <button
+            onClick={async () => {
+              const result = await overlay.openAsync<boolean>(
+                ({ isOpen }) => isOpen && <div data-testid="overlay-no-default-closeall">Dialog</div>
+              );
+              mockFn(result);
+            }}
+          >
+            {overlayTriggerContent}
+          </button>
+        );
+      }
+
+      const { user } = renderWithUser(<Component />);
+      await user.click(await screen.findByRole('button', { name: overlayTriggerContent }));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('overlay-no-default-closeall')).toBeInTheDocument();
+      });
+
+      // when: all overlays are closed via overlay.closeAll()
+      act(() => {
+        overlay.closeAll();
+      });
+
+      // then: promise resolves with undefined
+      await waitFor(() => {
+        expect(mockFn).toHaveBeenCalledWith(undefined);
+      });
+    });
+
+    it('resolves with undefined without defaultValue when unmounted externally via overlay.unmount()', async () => {
+      // given: an openAsync overlay without defaultValue
+      const overlayTriggerContent = 'openasync-no-default-unmount-trigger';
+      const testOverlayId = 'test-no-default-unmount-overlay';
+      const mockFn = vi.fn();
+
+      function Component() {
+        return (
+          <button
+            onClick={async () => {
+              const result = await overlay.openAsync<boolean>(
+                ({ isOpen }) => isOpen && <div data-testid="overlay-no-default-unmount">Dialog</div>,
+                { overlayId: testOverlayId }
+              );
+              mockFn(result);
+            }}
+          >
+            {overlayTriggerContent}
+          </button>
+        );
+      }
+
+      const { user } = renderWithUser(<Component />);
+      await user.click(await screen.findByRole('button', { name: overlayTriggerContent }));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('overlay-no-default-unmount')).toBeInTheDocument();
+      });
+
+      // when: overlay is unmounted externally
+      act(() => {
+        overlay.unmount(testOverlayId);
+      });
+
+      // then: promise resolves with undefined
+      await waitFor(() => {
+        expect(mockFn).toHaveBeenCalledWith(undefined);
+      });
+    });
+
+    it('resolves with undefined without defaultValue when unmounted via overlay.unmountAll()', async () => {
+      // given: an openAsync overlay without defaultValue
+      const overlayTriggerContent = 'openasync-no-default-unmountall-trigger';
+      const mockFn = vi.fn();
+
+      function Component() {
+        return (
+          <button
+            onClick={async () => {
+              const result = await overlay.openAsync<boolean>(
+                ({ isOpen }) => isOpen && <div data-testid="overlay-no-default-unmountall">Dialog</div>
+              );
+              mockFn(result);
+            }}
+          >
+            {overlayTriggerContent}
+          </button>
+        );
+      }
+
+      const { user } = renderWithUser(<Component />);
+      await user.click(await screen.findByRole('button', { name: overlayTriggerContent }));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('overlay-no-default-unmountall')).toBeInTheDocument();
+      });
+
+      // when: all overlays are unmounted
+      act(() => {
+        overlay.unmountAll();
+      });
+
+      // then: promise resolves with undefined
+      await waitFor(() => {
+        expect(mockFn).toHaveBeenCalledWith(undefined);
+      });
     });
 
     it('prevents double resolution when close is called after external close', async () => {
