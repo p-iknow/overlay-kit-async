@@ -1,0 +1,34 @@
+{
+  "name": "@overlay-kit/react-18",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "predev": "pnpm --filter overlay-kit-async build",
+    "dev": "pnpm predev && vite",
+    "build": "tsc && vite build",
+    "test": "vitest run",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@base-ui/react": "^1.1.0",
+    "overlay-kit": "workspace:overlay-kit-async@*",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "catalog:",
+    "@types/react": "^19.2.13",
+    "@types/react-dom": "^19.2.3",
+    "@tailwindcss/vite": "^4.1.0",
+    "@vitejs/plugin-react": "catalog:",
+    "@vitest/browser-playwright": "catalog:",
+    "playwright": "catalog:",
+    "tailwindcss": "^4.1.0",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:",
+    "vitest-browser-react": "catalog:"
+  }
+}
