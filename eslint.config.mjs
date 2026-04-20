@@ -1,13 +1,11 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
+import eslint from '@eslint/js';
+import importPlugin from 'eslint-plugin-import';
+import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
+import unicorn from 'eslint-plugin-unicorn';
+import unusedImports from 'eslint-plugin-unused-imports';
+import tseslint from 'typescript-eslint';
 
-const eslint = require('@eslint/js');
-const tseslint = require('typescript-eslint');
-const importPlugin = require('eslint-plugin-import');
-const eslintPluginPrettierRecommended = require('eslint-plugin-prettier/recommended');
-const unicorn = require('eslint-plugin-unicorn');
-const unusedImports = require('eslint-plugin-unused-imports');
-
-module.exports = tseslint.config(
+export default tseslint.config(
   {
     ignores: ['**/.vitepress/', '**/dist/', '**/esm/', '**/.next/', '**/.next-local/', '.pnp.*', '.yarn/'],
   },
@@ -35,7 +33,6 @@ module.exports = tseslint.config(
       ],
       curly: ['error', 'all'],
       eqeqeq: ['error', 'always', { null: 'ignore' }],
-      // TypeScript에서 이미 잡고 있는 문제이기 때문에 + location, document 등의 global variable도 잡아서
       'no-undef': 'off',
     },
   },
