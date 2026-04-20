@@ -1,25 +1,43 @@
-![](../docs/public/og.png)
+# overlay-kit-async &middot; [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/p-iknow/overlay-kit-async/blob/main/LICENSE)
 
-# overlay-kit &middot; [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/toss/overlay-kit/blob/main/LICENSE) [![codecov](https://codecov.io/gh/toss/overlay-kit/graph/badge.svg?token=JBEAQTL7XK)](https://codecov.io/gh/toss/overlay-kit) [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/toss/overlay-kit)
+`overlay-kit-async` is a fork of [toss/overlay-kit](https://github.com/toss/overlay-kit) that fixes `overlay.openAsync` behavior when an overlay is closed externally. The public API and interface are **identical** to the upstream — you can use it as a drop-in replacement.
 
-English | [한국어](https://github.com/toss/overlay-kit/blob/main/README-ko_kr.md)
+## Why this fork?
 
-overlay-kit is a library for declaratively managing overlays like modals, popups, and dialogs in React.
+In upstream `overlay-kit`, `overlay.openAsync` **never resolves** when the overlay is closed via `overlay.close()`, `closeAll()`, `unmount()`, or `unmountAll()`. This causes memory leaks, deadlocked `await` calls, and broken global "close all" flows.
 
-You can efficiently implement overlays without complex state management or unnecessary event handling.
+See [toss/overlay-kit#169](https://github.com/toss/overlay-kit/issues/169) for the original issue and [toss/overlay-kit#215](https://github.com/toss/overlay-kit/pull/215) for the unreviewed fix PR.
+
+`overlay-kit-async` guarantees that `openAsync` always resolves:
+
+- With `defaultValue` → resolves with that value on external close. Return type is `Promise<T>`.
+- Without `defaultValue` → resolves with `undefined` on external close. Return type is `Promise<T | undefined>`.
+
+## Install
 
 ```sh
-npm install overlay-kit
+npm install overlay-kit-async
 ```
 
 ## Example
 
-### Opening Simple Overlays
-
-You can easily open and close overlays using `overlay.open`.
+First, add the provider:
 
 ```tsx
-import { overlay } from 'overlay-kit';
+import { OverlayProvider } from 'overlay-kit-async';
+
+const app = createRoot(document.getElementById('root')!);
+app.render(
+  <OverlayProvider>
+    <App />
+  </OverlayProvider>
+);
+```
+
+### Opening Simple Overlays
+
+```tsx
+import { overlay } from 'overlay-kit-async';
 
 <Button
   onClick={() => {
@@ -34,59 +52,64 @@ import { overlay } from 'overlay-kit';
 
 ### Opening Asynchronous Overlays
 
-You can handle overlay results as a `Promise` using `overlay.openAsync`.
+Unlike upstream, the returned Promise **always resolves** — even when the overlay is closed externally.
 
 ```tsx
-import { overlay } from 'overlay-kit';
+import { overlay } from 'overlay-kit-async';
 
 <Button
   onClick={async () => {
-    const result = await overlay.openAsync<boolean>(({ isOpen, close }) => (
+    const result = await overlay.openAsync<boolean>(({ isOpen, close, unmount }) => (
       <Dialog
         open={isOpen}
         onConfirm={() => close(true)}
         onClose={() => close(false)}
         onExit={unmount}
       />
-    ))
+    ));
+
+    // result: boolean | undefined
+    //   user confirmed  → true
+    //   user dismissed  → false
+    //   external close  → undefined
+    if (result === undefined) {
+      return;
+    }
   }}
 >
   Open
 </Button>
 ```
 
-## Why use overlay-kit?
+For a non-nullable return type, pass a `defaultValue`:
 
-### Problems with Traditional Overlay Management**
+```tsx
+const result = await overlay.openAsync<boolean>(
+  ({ isOpen, close }) => (
+    <Dialog open={isOpen} onConfirm={() => close(true)} onClose={() => close(false)} />
+  ),
+  { defaultValue: false }
+);
+// result: boolean — external close resolves with `false` instead of `undefined`.
+```
 
-1. Complexity of State Management
-   - Had to manage overlay state directly using useState or global state.
-   - Code became complex and less readable as state management mixed with UI logic.
-2. Repetitive Event Handling
-   - Had to repeatedly write event handling code for opening, closing, and returning results.
-   - This led to code duplication and degraded development experience.
-3. Lack of Reusability
-   - UI and logic were tightly coupled through callback functions to return values from overlays.
-   - This made it difficult to reuse components.
+## Compatibility with upstream
 
-### Goals of overlay-kit
+The surface API (`overlay`, `OverlayProvider`, hooks, types) is **identical** to `toss/overlay-kit`. Migration is usually just:
 
-1. Design Following React Philosophy
-   - React favors declarative code.
-   - overlay-kit helps manage overlays declaratively.
-2. Improve Development Productivity
-   - By encapsulating state management and event handling, developers can focus solely on UI and business logic.
-3. Enhance Extensibility and Reusability
-   - Increased overlay reusability by separating UI and behavior, and returning Promises.
+```diff
+- import { overlay, OverlayProvider } from 'overlay-kit';
++ import { overlay, OverlayProvider } from 'overlay-kit-async';
+```
 
+The one behavioral difference is `openAsync`:
+
+| | Upstream | overlay-kit-async |
+|---|---|---|
+| Internal `close(value)` | resolves with `value` | resolves with `value` |
+| External close / closeAll / unmount | **pending forever** ❌ | resolves with `defaultValue` or `undefined` ✅ |
+| Return type (without `defaultValue`) | `Promise<T>` | `Promise<T \| undefined>` |
 
 ## License
 
-MIT © Viva Republica, Inc. See [LICENSE](https://github.com/toss/overlay-kit/blob/main/LICENSE) for details.
-
-<a title="Toss" href="https://toss.im">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://static.toss.im/logos/png/4x/logo-toss-reverse.png">
-    <img alt="Toss" src="https://static.toss.im/logos/png/4x/logo-toss.png" width="100">
-  </picture>
-</a>
+MIT © Viva Republica, Inc. (original) · forked and maintained by [@p-iknow](https://github.com/p-iknow). See [LICENSE](https://github.com/p-iknow/overlay-kit-async/blob/main/LICENSE) for details.
