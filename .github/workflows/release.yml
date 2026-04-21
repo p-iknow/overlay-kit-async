@@ -1,17 +1,21 @@
-name: Publish to npm
+name: Release
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  publish:
+  release:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      id-token: write
+      contents: write       # Version PR 생성/업데이트, git tag push
+      pull-requests: write  # Version PR 관리
+      id-token: write       # npm --provenance (GitHub OIDC)
 
     steps:
       - name: Checkout
@@ -35,32 +39,30 @@ jobs:
       - name: Build Package
         run: pnpm --filter overlay-kit-async run build
 
-      - name: Check if version already published
-        id: version-check
-        run: |
-          PACKAGE_NAME=$(node -p "require('./packages/package.json').name")
-          LOCAL_VERSION=$(node -p "require('./packages/package.json').version")
-          PUBLISHED_VERSION=$(npm view "${PACKAGE_NAME}" version 2>/dev/null || echo "none")
-
-          if [ "$LOCAL_VERSION" = "$PUBLISHED_VERSION" ]; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "⏭️ ${PACKAGE_NAME}@${LOCAL_VERSION} already published. Skipping."
-          else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-            echo "🚀 Publishing ${PACKAGE_NAME}@${LOCAL_VERSION} (registry has: ${PUBLISHED_VERSION})"
-          fi
-
-      - name: Publish to npm
-        if: steps.version-check.outputs.skip != 'true'
-        run: |
-          cd packages
-          npm publish --access public --provenance
+      # .changeset/*.md 존재 시: Version PR 생성/업데이트 (version 모드)
+      # .changeset/*.md 없음: pnpm changeset:publish 실행 (publish 모드)
+      - name: Create Release Pull Request or Publish to npm
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          title: 'chore: version packages'
+          commit: 'chore: version packages'
+          version: pnpm changeset:version
+          publish: pnpm changeset:publish
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: 'true'
 
-      - name: Create Git Tag
-        if: steps.version-check.outputs.skip != 'true'
+      # changesets/action은 `<pkg>@<version>` 태그를 만듭니다.
+      # 기존 히스토리 일관성을 위해 `v<version>` 태그도 함께 생성.
+      - name: Create v-prefixed git tag
+        if: steps.changesets.outputs.published == 'true'
         run: |
           VERSION=$(node -p "require('./packages/package.json').version")
-          git tag "v${VERSION}"
-          git push origin "v${VERSION}"
+          if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
+            echo "⏭️ Tag v${VERSION} already exists. Skipping."
+          else
+            git tag "v${VERSION}"
+            git push origin "v${VERSION}"
+          fi

@@ -107,6 +107,5 @@ feat: resolve openAsync on external close with defaultValue option
 | 워크플로우 파일 | 역할 |
 |----------------|------|
 | `.github/workflows/changeset-check.yml` | PR에서 `packages/src/` 변경 시 changeset 파일 필수 체크 |
-| `.github/workflows/changeset-version.yml` | changesets/action — Version PR 자동 생성 |
-| `.github/workflows/release.yml` | main push 시 npm 자동 배포 |
-| `.github/workflows/publish-comment.yml` | PR 코멘트 `/publish`로 프리뷰 배포 |
+| `.github/workflows/release.yml` | main push 시 changesets/action 실행 — `.changeset/*.md` 존재 여부로 Version PR 생성(version 모드) 또는 npm publish(publish 모드) 자동 분기 |
+| `.github/workflows/publish-comment.yml` | PR 코멘트 `/publish`로 프리뷰 배포 (`x.y.z-prN`) |

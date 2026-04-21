@@ -45,9 +45,9 @@ git push origin feat/new-close-option
 PR #10 → Merge to main
 ```
 
-### 1-5. changesets/action 자동 실행
+### 1-5. release.yml 자동 실행 (version 모드)
 
-봇이 main의 `.changeset/*.md` 파일을 감지하고 **자동으로 Version PR을 생성**합니다:
+`release.yml`이 발화하고 `changesets/action`이 main의 `.changeset/*.md` 파일을 감지 → **version 모드**로 진입해 자동으로 Version PR을 생성합니다:
 
 ```
 PR #11: "chore: version packages"
@@ -62,13 +62,15 @@ PR #11: "chore: version packages"
 PR #11 "chore: version packages" → Merge to main
 ```
 
-### 1-7. release.yml 자동 실행
+### 1-7. release.yml 재실행 (publish 모드)
+
+Version PR 머지로 main이 push되면 `release.yml`이 다시 발화. 이번에는 `.changeset/*.md`가 모두 소비되어 없으므로 `changesets/action`이 **publish 모드**로 진입:
 
 ```
-1. package.json version = 1.10.0 확인
-2. npm 확인 → 1.9.0만 있음
-3. npm publish → overlay-kit-async@1.10.0 배포
-4. git tag v1.10.0 생성
+1. pnpm changeset:publish 실행
+2. npm에 이미 1.10.0이 있는지 체크 → 없으면 publish
+3. npm publish --provenance → overlay-kit-async@1.10.0 배포
+4. git tag 생성 (overlay-kit-async@1.10.0, v1.10.0) + push
 ```
 
 **사용자가 `pnpm add overlay-kit-async@1.10.0`으로 설치 가능.**
@@ -87,12 +89,12 @@ PR #11 (fix: B)   → .changeset/bbb.md (patch)  → 머지
 PR #12 (fix: C)   → .changeset/ccc.md (patch)  → 머지
 ```
 
-### 2-2. 봇이 Version PR을 계속 업데이트
+### 2-2. release.yml이 매 머지마다 Version PR을 갱신
 
 ```
-PR #10 머지 → 봇이 Version PR 생성 (1.9.0 → 1.10.0, minor 기준)
-PR #11 머지 → 봇이 Version PR 업데이트 (fix B 내용 추가)
-PR #12 머지 → 봇이 Version PR 업데이트 (fix C 내용 추가)
+PR #10 머지 → release.yml (version 모드) → Version PR 생성 (1.9.0 → 1.10.0, minor 기준)
+PR #11 머지 → release.yml (version 모드) → Version PR 업데이트 (fix B 내용 추가)
+PR #12 머지 → release.yml (version 모드) → Version PR 업데이트 (fix C 내용 추가)
 ```
 
 Version PR 내용:
@@ -148,7 +150,7 @@ git push origin docs/update-readme
 
 ```
 PR 머지 → release.yml 실행
-        → version 변경 없음 → skip
+        → .changeset/*.md 없음 → changesets/action이 할 일 없음
         → 아무 일도 안 일어남 ✅
 ```
 
@@ -243,15 +245,15 @@ git push origin main
 ### 6-2. 결과
 
 ```
-1. release.yml → 새 버전 감지 → 배포됨 (여기까진 OK)
-2. 봇의 Version PR → conflict 발생 ❌ (같은 파일을 수정)
-3. 봇이 Version PR rebase 시도 → 실패 가능
+1. release.yml → .changeset/*.md 소비됨 → publish 모드 → 배포됨 (여기까진 OK)
+2. 기존 Version PR이 열려 있었다면 → conflict 발생 ❌ (같은 파일을 수정)
+3. 다음 feature PR 머지 시 release.yml이 version 모드로 Version PR rebase 시도 → 실패 가능
 ```
 
 ### 6-3. 복구
 
 ```
-봇의 Version PR 닫기 → 새 changeset이 쌓이면 봇이 새로 생성
+기존 Version PR 닫기 → 새 changeset이 쌓이면 release.yml이 새로 생성
 ```
 
 **규칙: 수동 `changeset:version`을 실행하지 않습니다. Version PR 머지로만 릴리스합니다.**

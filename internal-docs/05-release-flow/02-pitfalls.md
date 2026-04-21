@@ -6,23 +6,31 @@
 
 GitHub는 **GITHUB_TOKEN으로 만든 커밋이 다른 워크플로우를 트리거하지 못하게** 차단합니다 (무한 루프 방지 정책).
 
+A 패턴처럼 `release.yml` 하나로 version과 publish를 모두 처리하는 구조에서는 특히 중요합니다:
+
 ```
-changesets/action이 GITHUB_TOKEN으로 Version PR 생성
+release.yml (version 모드) → GITHUB_TOKEN으로 Version PR 생성
   → 머지하면 main에 push 발생
-  → publish-internal.yml이 트리거되지 않음 ❌
+  → release.yml (publish 모드)이 트리거되지 않음 ❌
   → 배포가 안 됨
 ```
 
 ### 해결
 
-`changesets/action`에 PAT(Personal Access Token)를 사용합니다:
+`changesets/action`과 `actions/checkout`에 PAT(Personal Access Token)를 사용합니다:
 
 ```yaml
 # release.yml
+- uses: actions/checkout@v4
+  with:
+    token: ${{ secrets.GH_ACCESS_TOKEN }}  # PAT
+
 - uses: changesets/action@v1
   env:
-    GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}  # PAT 사용
+    GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}  # PAT
 ```
+
+> `actions/checkout`이 PAT를 받는 이유는 publish 후 `git tag push`를 위해서도 필요하기 때문입니다.
 
 이 프로젝트에서는 이미 `secrets.GH_ACCESS_TOKEN`이 설정되어 있으므로 이를 사용합니다.
 
