@@ -52,8 +52,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          # NPM_CONFIG_PROVENANCE: 'true'  # TEMP: provenance 거부 여부 확인을 위해 일시 비활성화
+          # provenance는 npm 레지스트리 검증에서 404로 거부되는 이슈가 있어 비활성.
+          # 복구하려면 npmjs.com의 Trusted Publisher 설정을 선행한 뒤 아래 라인 재활성.
+          # NPM_CONFIG_PROVENANCE: 'true'
 
       # changesets/action은 `<pkg>@<version>` 태그를 만듭니다.
       # 기존 히스토리 일관성을 위해 `v<version>` 태그도 함께 생성.
