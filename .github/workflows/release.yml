@@ -52,7 +52,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NPM_CONFIG_PROVENANCE: 'true'
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # NPM_CONFIG_PROVENANCE: 'true'  # TEMP: provenance 거부 여부 확인을 위해 일시 비활성화
 
       # changesets/action은 `<pkg>@<version>` 태그를 만듭니다.
       # 기존 히스토리 일관성을 위해 `v<version>` 태그도 함께 생성.
