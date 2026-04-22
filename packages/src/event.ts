@@ -3,7 +3,7 @@ import {
   type OverlayAsyncControllerComponent,
   type OverlayControllerComponent,
 } from './context/provider/content-overlay-controller';
-import { createUseExternalEvents } from './utils';
+import { createUseExternalEvents, promiseWithResolver } from './utils';
 import { randomId } from './utils/random-id';
 
 export type OverlayEvent = {
@@ -21,6 +21,27 @@ type OpenOverlayOptions = {
 type OpenAsyncOverlayOptions<T> = OpenOverlayOptions & {
   defaultValue: T;
 };
+
+type SubscribeOverlayEvent = <K extends keyof OverlayEvent>(event: K, handler: OverlayEvent[K]) => () => void;
+
+function subscribeOverlayEnd<T>(
+  subscribe: SubscribeOverlayEvent,
+  overlayId: string,
+  defaultValue: T | undefined,
+  onEnd: (value: T | undefined) => void
+): () => void {
+  const unsubs = [
+    subscribe('close', (closedOverlayId) => {
+      if (closedOverlayId === overlayId) onEnd(defaultValue);
+    }),
+    subscribe('closeAll', () => onEnd(defaultValue)),
+    subscribe('unmount', (unmountedOverlayId) => {
+      if (unmountedOverlayId === overlayId) onEnd(defaultValue);
+    }),
+    subscribe('unmountAll', () => onEnd(defaultValue)),
+  ];
+  return () => unsubs.forEach((u) => u());
+}
 
 export function createOverlay(overlayId: string) {
   const [useOverlayEvent, createEvent, subscribeEvent] = createUseExternalEvents<OverlayEvent>(
@@ -48,78 +69,32 @@ export function createOverlay(overlayId: string) {
     controller: OverlayAsyncControllerComponent<T>,
     options?: OpenOverlayOptions | OpenAsyncOverlayOptions<T>
   ): Promise<T | undefined> {
-    return new Promise<T | undefined>((_resolve, _reject) => {
-      let resolved = false;
-      const hasDefaultValue = options != null && 'defaultValue' in options;
+    const currentOverlayId = options?.overlayId ?? randomId();
+    const hasDefaultValue = options != null && 'defaultValue' in options;
+    const defaultValue = hasDefaultValue ? (options as OpenAsyncOverlayOptions<T>).defaultValue : undefined;
 
-      const cleanup = () => {
-        unsubscribeClose();
-        unsubscribeCloseAll();
-        unsubscribeUnmount();
-        unsubscribeUnmountAll();
-      };
+    const { promise, resolve, reject } = promiseWithResolver<T | undefined>();
+    const cleanup = subscribeOverlayEnd(subscribeEvent, currentOverlayId, defaultValue, resolve);
 
-      const resolve = (value: T | undefined) => {
-        if (resolved) {
-          return;
-        }
-        resolved = true;
-        cleanup();
-        _resolve(value);
-      };
-
-      const reject = (reason?: unknown) => {
-        if (resolved) {
-          return;
-        }
-        resolved = true;
-        cleanup();
-        _reject(reason);
-      };
-
-      const currentOverlayId = options?.overlayId ?? randomId();
-      const defaultValue = hasDefaultValue ? (options as OpenAsyncOverlayOptions<T>).defaultValue : undefined;
-
-      const unsubscribeClose = subscribeEvent('close', (closedOverlayId: string) => {
-        if (closedOverlayId === currentOverlayId) {
-          resolve(defaultValue);
-        }
-      });
-
-      const unsubscribeCloseAll = subscribeEvent('closeAll', () => {
-        resolve(defaultValue);
-      });
-
-      const unsubscribeUnmount = subscribeEvent('unmount', (unmountedOverlayId: string) => {
-        if (unmountedOverlayId === currentOverlayId) {
-          resolve(defaultValue);
-        }
-      });
-
-      const unsubscribeUnmountAll = subscribeEvent('unmountAll', () => {
-        resolve(defaultValue);
-      });
-
-      open(
-        (overlayProps, ...deprecatedLegacyContext) => {
-          const close = (param: T) => {
+    open(
+      (overlayProps, ...deprecatedLegacyContext) => {
+        const props: OverlayAsyncControllerProps<T> = {
+          ...overlayProps,
+          close: (param: T) => {
             resolve(param);
             overlayProps.close();
-          };
+          },
+          reject: (reason?: unknown) => {
+            reject(reason);
+            overlayProps.close();
+          },
+        };
+        return controller(props, ...deprecatedLegacyContext);
+      },
+      { overlayId: currentOverlayId }
+    );
 
-          const props: OverlayAsyncControllerProps<T> = {
-            ...overlayProps,
-            close,
-            reject: (reason?: unknown) => {
-              reject(reason);
-              overlayProps.close();
-            },
-          };
-          return controller(props, ...deprecatedLegacyContext);
-        },
-        { overlayId: currentOverlayId }
-      );
-    });
+    return promise.finally(cleanup);
   }
 
   const close = createEvent('close');
