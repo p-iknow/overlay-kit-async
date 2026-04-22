@@ -1,5 +1,11 @@
 # overlay-kit
 
+## 2.0.1
+
+### Patch Changes
+
+- [#9](https://github.com/p-iknow/overlay-kit-async/pull/9) [`a9c0f7d`](https://github.com/p-iknow/overlay-kit-async/commit/a9c0f7d633da5e4688283b03ca39745e70e18471) Thanks [@p-iknow](https://github.com/p-iknow)! - Refactor `openAsync` to remove the circular dependency between `subscribeEvent`, `cleanup`, and `resolve`. The subscription lifecycle is now extracted into `subscribeOverlayEnd`, and a new `promiseWithResolver` utility provides the deferred handle so cleanup runs via `promise.finally`. Behavior is unchanged.
+
 ## 1.8.6
 
 ### Patch Changes
@@ -19,13 +25,11 @@
 - [#187](https://github.com/toss/overlay-kit/pull/187) [`c3dfcf1`](https://github.com/toss/overlay-kit/commit/c3dfcf169663069955f871bfe4f61923af3a1fd3) Thanks [@jungpaeng](https://github.com/jungpaeng)! - Fixed a bug where overlays could not be reopened after closing with the same ID.
 
   ### Fixed Issues
-
   - Resolved issue where overlays would not display when reopened with the same `overlayId` after being closed
   - Improved mounting state tracking with added `isMounted` property in overlay state management
   - Added state change detection logic to ensure proper reopen handling
 
   ### Changes
-
   - Added `isMounted` property to `OverlayItem` type for better mounting state tracking
   - Enhanced `ADD` action in reducer to handle reopening of existing closed overlays
   - Implemented automatic reopen mechanism through state comparison in `OverlayProvider`
@@ -42,12 +46,10 @@
   Prevent unnecessary re-renders of existing overlays when new overlays are opened, improving performance.
 
   ### Key Changes
-
   - **Added React.memo**: Applied memo to overlay controller component to prevent re-renders when props haven't changed
   - **Integrated state management**: Streamlined state management by integrating it directly into the component and removing redundant prop passing
 
   ### Performance Improvements
-
   - Eliminated unnecessary re-renders of existing overlays when adding new overlays in multi-overlay scenarios
   - Provides more predictable and maintainable state management flow
   - Maintained existing API compatibility while optimizing internal performance
@@ -121,7 +123,6 @@
 ### Patch Changes
 
 - [#113](https://github.com/toss/overlay-kit/pull/113) [`b57d15b`](https://github.com/toss/overlay-kit/commit/b57d15ba9b64c05d50224a09bd116266109d886c) Thanks [@jungpaeng](https://github.com/jungpaeng)! - Improve overlay unmount logic and add test cases
-
   - Enhanced current overlay state management during unmount
     - When unmounting a middle overlay with multiple overlays open, the last overlay becomes current
     - When unmounting the last overlay, the previous overlay becomes current
@@ -134,7 +135,6 @@
 ### Minor Changes
 
 - [#102](https://github.com/toss/overlay-kit/pull/102) [`becbd90`](https://github.com/toss/overlay-kit/commit/becbd90fa111419c3bcf4088edebc6ce743fdf40) Thanks [@jungpaeng](https://github.com/jungpaeng)! - feat: Add local overlay context support
-
   - Add `experimental_createOverlayContext` function to create isolated overlay contexts
   - Refactor context management to support multiple overlay instances
   - Move overlay provider and controller logic into separate files
@@ -212,7 +212,6 @@
 ### Patch Changes
 
 - [#50](https://github.com/toss/overlay-kit/pull/50) [`5d7e84d`](https://github.com/toss/overlay-kit/commit/5d7e84d3d096a5510ba4d7953d37824a4af5dfc2) Thanks [@jungpaeng](https://github.com/jungpaeng)! - Fix: Ensure 'current' reflects the last overlay when closing intermediate overlays
-
   - Resolve issue where 'current' does not update to the last overlay when closing an intermediate overlay
   - Add logic to correctly update 'current' in reducer
 
